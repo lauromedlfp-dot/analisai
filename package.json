@@ -1,0 +1,10 @@
+{
+  "name": "analisai",
+  "version": "1.0.0",
+  "description": "Analisador de Exames Laboratoriais",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'Build complete'"
+  },
+  "dependencies": {}
+}

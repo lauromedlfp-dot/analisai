@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnalisAI V3</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: #1e293b;
+  --bg-input: #0f172a;
+  --border: #334155;
+  --border-focus: #3b82f6;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --danger-bg: rgba(239,68,68,0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+.header {
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo {
+  width: 40px; height: 40px;
+  background: var(--accent);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.header h1 { font-size: 20px; font-weight: 600; }
+.header p { font-size: 12px; color: var(--text-secondary); }
+
+.password-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.password-bar label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.password-bar input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--text-primary);
+  font-size: 12px;
+  width: 200px;
+}
+
+.password-bar input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.password-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  transition: background 0.3s;
+}
+
+.password-status.valid {
+  background: var(--success);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.controls {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-group label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.input-group select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+.input-group select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.btn:hover { background: var(--accent-hover); }
+.btn:disabled { background: var(--text-muted); cursor: not-allowed; opacity: 0.5; }
+.btn.danger { background: var(--danger); }
+.btn.danger:hover { background: #dc2626; }
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.textarea {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 13px;
+  min-height: 300px;
+  resize: vertical;
+  width: 100%;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.drop-zone {
+  background: var(--bg-input);
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 16px;
+}
+
+.drop-zone:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.drop-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.drop-zone-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.file-list {
+  margin-top: 16px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.file-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-item-status {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin: 0 8px;
+}
+
+.file-item-remove {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 4px;
+}
+
+.output-area {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 200px;
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.output-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 200px;
+  color: var(--text-muted);
+}
+
+.output-placeholder .icon {
+  font-size: 48px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--success);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 1000;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+.status-bar {
+  margin-top: 20px;
+  padding: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+}
+
+.copy-btn-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">📋</div>
+    <div>
+      <h1>AnalisAI V3</h1>
+      <p>Analisador de Exames Laboratoriais</p>
+    </div>
+  </div>
+  <div class="password-bar">
+    <label for="passwordInput">Senha:</label>
+    <input type="password" id="passwordInput" placeholder="Digite a senha">
+    <div class="password-status" id="passwordStatus"></div>
+    <label for="modelSelect" style="margin-left: 16px;">Modelo:</label>
+    <select id="modelSelect">
+      <option value="claude-opus-4-6">Opus 4</option>
+      <option value="claude-sonnet-4-20250514" selected>Sonnet 4</option>
+      <option value="claude-3-5-haiku-20241022">Haiku 3.5</option>
+    </select>
+  </div>
+</div>
+
+<div class="container">
+  <div class="controls">
+    <button class="btn" id="processBtn" onclick="processExams()">Processar Exames</button>
+    <button class="btn danger" id="clearBtn" onclick="clearAll()">Limpar Tudo</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('text')">Texto</button>
+    <button class="tab-btn" onclick="switchTab('pdf')">PDFs</button>
+    <button class="tab-btn" onclick="switchTab('image')">Imagens</button>
+  </div>
+
+  <div id="text" class="tab-content active">
+    <textarea id="textInput" class="textarea" placeholder="Cole aqui os exames em texto..."></textarea>
+  </div>
+
+  <div id="pdf" class="tab-content">
+    <div class="drop-zone" id="pdfZone">
+      <div class="drop-zone-text">Arraste PDFs aqui ou clique para selecionar (máx. 10 arquivos)</div>
+      <input type="file" id="pdfInput" multiple accept=".pdf" style="display:none;">
+    </div>
+    <div id="pdfPreview" class="file-list"></div>
+  </div>
+
+  <div id="image" class="tab-content">
+    <div class="drop-zone" id="imageZone">
+      <div class="drop-zone-text">Arraste imagens aqui ou clique para selecionar (máx. 20 arquivos)</div>
+      <input type="file" id="imageInput" multiple accept="image/*" style="display:none;">
+    </div>
+    <div id="imagePreview" class="file-list"></div>
+  </div>
+
+  <div id="outputArea" class="output-area">
+    <div class="output-placeholder">
+      <div class="icon">📄</div>
+      <span>Os exames organizados aparecerão aqui</span>
+    </div>
+  </div>
+
+  <div class="copy-btn-group">
+    <button class="btn" id="copyBtn" onclick="copyOutput()" style="display:none;">Copiar Resultado</button>
+  </div>
+
+  <div class="status-bar">
+    <span id="statusText">Pronto</span>
+    <span id="tokenCount"></span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MAX_PDFS = 10;
+const MAX_IMAGES = 20;
+
+let currentTab = 'text';
+let isProcessing = false;
+let pdfQueue = [];
+let imageQueue = [];
+let fileIdCounter = 0;
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function setupDragDrop(zoneId, inputId) {
+  const zone = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    zone.classList.add('drag-over');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files);
+    if (zoneId === 'pdfZone') handlePdfUpload({ target: { files } });
+    else handleImageUpload({ target: { files } });
+  });
+}
+
+function handlePdfUpload(e) {
+  const files = Array.from(e.target.files);
+  if (pdfQueue.length + files.length > MAX_PDFS) {
+    showToast(`Máximo ${MAX_PDFS} PDFs permitidos`, 'error');
+    return;
+  }
+  files.forEach(file => {
+    pdfQueue.push({ id: fileIdCounter++, name: file.name, status: 'pending', file });
+  });
+  updatePdfUI();
+}
+
+function handleImageUpload(e) {
+  const files = Array.from(e.target.files);
+  if (imageQueue.length + files.length > MAX_IMAGES) {
+    showToast(`Máximo ${MAX_IMAGES} imagens permitidas`, 'error');
+    return;
+  }
+  files.forEach(file => {
+    imageQueue.push({ id: fileIdCounter++, name: file.name, status: 'pending', file });
+  });
+  updateImageUI();
+}
+
+function updatePdfUI() {
+  document.getElementById('pdfPreview').innerHTML = pdfQueue.map(f => `
+    <div class="file-item">
+      <span class="file-item-name">📄 ${f.name}</span>
+      <span class="file-item-status">${f.status}</span>
+      <button class="file-item-remove" onclick="removePdf(${f.id})">×</button>
+    </div>
+  `).join('');
+}
+
+function updateImageUI() {
+  document.getElementById('imagePreview').innerHTML = imageQueue.map(f => `
+    <div class="file-item">
+      <span class="file-item-name">🖼️ ${f.name}</span>
+      <span class="file-item-status">${f.status}</span>
+      <button class="file-item-remove" onclick="removeImage(${f.id})">×</button>
+    </div>
+  `).join('');
+}
+
+function removePdf(id) {
+  pdfQueue = pdfQueue.filter(f => f.id !== id);
+  updatePdfUI();
+}
+
+function removeImage(id) {
+  imageQueue = imageQueue.filter(f => f.id !== id);
+  updateImageUI();
+}
+
+async function extractPdfText(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+  let text = '';
+  for (let i = 0; i < pdf.numPages; i++) {
+    const page = await pdf.getPage(i + 1);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join('') + '\n';
+  }
+  return text;
+}
+
+async function extractImageText(file) {
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onload = async () => {
+      try {
+        const result = await Tesseract.recognize(reader.result, 'por');
+        resolve(result.data.text);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function processExams() {
+  const password = document.getElementById('passwordInput').value;
+  const model = document.getElementById('modelSelect').value;
+  const textInput = document.getElementById('textInput').value;
+
+  if (!password) {
+    showToast('Insira a senha', 'error');
+    return;
+  }
+
+  if (!textInput && pdfQueue.length === 0 && imageQueue.length === 0) {
+    showToast('Insira exames em texto, PDF ou imagem', 'error');
+    return;
+  }
+
+  isProcessing = true;
+  document.getElementById('processBtn').disabled = true;
+  setStatus('Processando...');
+
+  try {
+    let allText = textInput;
+
+    // Processar PDFs
+    for (let f of pdfQueue) {
+      if (f.status !== 'pending') continue;
+      f.status = 'extraindo...';
+      updatePdfUI();
+      f.text = await extractPdfText(f.file);
+      f.status = 'pronto';
+      updatePdfUI();
+      allText += '\n' + f.text;
+    }
+
+    // Processar Imagens
+    for (let f of imageQueue) {
+      if (f.status !== 'pending') continue;
+      f.status = 'OCR...';
+      updateImageUI();
+      f.text = await extractImageText(f.file);
+      f.status = 'pronto';
+      updateImageUI();
+      allText += '\n' + f.text;
+    }
+
+    setStatus('Enviando para processamento...');
+
+    // Chamar função Netlify
+    const response = await fetch('/.netlify/functions/process-exams', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password,
+        examText: allText,
+        model
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || `Erro ${response.status}`);
+    }
+
+    document.getElementById('outputArea').textContent = data.result;
+    document.getElementById('copyBtn').style.display = 'inline-block';
+    
+    if (data.tokens) {
+      document.getElementById('tokenCount').textContent = `Tokens: ${data.tokens}`;
+    }
+
+    setStatus('Pronto!');
+    showToast('Exames processados com sucesso!');
+
+  } catch (err) {
+    showToast(`Erro: ${err.message}`, 'error');
+    setStatus('Erro');
+  } finally {
+    isProcessing = false;
+    document.getElementById('processBtn').disabled = false;
+  }
+}
+
+function copyOutput() {
+  const output = document.getElementById('outputArea').textContent;
+  navigator.clipboard.writeText(output).then(() => {
+    showToast('Copiado!');
+  });
+}
+
+function clearAll() {
+  document.getElementById('textInput').value = '';
+  pdfQueue = [];
+  imageQueue = [];
+  updatePdfUI();
+  updateImageUI();
+  document.getElementById('outputArea').innerHTML = `
+    <div class="output-placeholder">
+      <div class="icon">📄</div>
+      <span>Os exames organizados aparecerão aqui</span>
+    </div>`;
+  document.getElementById('copyBtn').style.display = 'none';
+  setStatus('Pronto');
+}
+
+function setStatus(text) {
+  document.getElementById('statusText').textContent = text;
+}
+
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.background = type === 'error' ? 'var(--danger)' : 'var(--success)';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function updatePasswordStatus() {
+  const pwd = document.getElementById('passwordInput').value;
+  const st = document.getElementById('passwordStatus');
+  st.classList.toggle('valid', !!pwd);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  setupDragDrop('pdfZone', 'pdfInput');
+  setupDragDrop('imageZone', 'imageInput');
+
+  document.getElementById('pdfInput').addEventListener('change', handlePdfUpload);
+  document.getElementById('imageInput').addEventListener('change', handleImageUpload);
+  document.getElementById('passwordInput').addEventListener('input', updatePasswordStatus);
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const savedModel = localStorage.getItem('examAnalyzerModel');
+  if (savedModel) document.getElementById('modelSelect').value = savedModel;
+
+  document.getElementById('modelSelect').addEventListener('change', () => {
+    localStorage.setItem('examAnalyzerModel', document.getElementById('modelSelect').value);
+  });
+});
+</script>
+</body>
+</html>
